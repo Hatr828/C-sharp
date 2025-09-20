@@ -1,0 +1,6 @@
+int a = 10*200;
+print(a);
+a = a / 3 + 1;
+print(a);
+a = 2000 / (3 + 1);
+print(a);
