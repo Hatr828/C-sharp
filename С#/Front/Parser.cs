@@ -22,7 +22,7 @@ namespace С_.Front
         {
             Lexer.Execute();
 
-            _current = Lexer.Tokens.First ?? throw new ArgumentNullException("Tokens is null.");
+            _current = Lexer.Tokens.First;
 
             while (_current != null)
             {
@@ -42,7 +42,7 @@ namespace С_.Front
                 case KeyWords kw when kw == KeyWords.Int && Peek().Type is Literals.Ident:
                     {
                         Literals literal = Literals.Int;
-                        string name = Pop().Val ?? throw new ArgumentNullException("Val is null");
+                        string name = Pop().Val ?? throw new NullReferenceException();
 
                         if (PeekType() is Delimiters.Semicolon)
                         {
@@ -67,7 +67,7 @@ namespace С_.Front
                         Pop(); // [
                         Expect(Delimiters.RBracket, "] not found", true);
 
-                        string name = Pop().Val ?? throw new ArgumentNullException("Val is null");
+                        string name = Pop().Val ?? throw new NullReferenceException();
 
                         if (PeekType() is Delimiters.Semicolon)
                         {
@@ -205,11 +205,11 @@ namespace С_.Front
 
         private Token Peek()
         {
-            return _current?.Value ?? throw new ArgumentNullException("_current is null");
+            return _current?.Value ?? throw new NullReferenceException();
         }
         private Enum PeekType()
         {
-            return _current?.Value.Type ?? throw new ArgumentNullException("_current is null");
+            return _current?.Value.Type ?? throw new NullReferenceException();
         }
 
         private Token Pop()
