@@ -1,15 +1,14 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Collections.Generic;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using С_.Front;
+using static С_.Front.Expr;
 
 namespace С_.Back
 {
     public class Interpreter(Parser parser)
     {
         private Dictionary<string, object?> _variables = new Dictionary<string, object?>();
-
-        private Stack<string> _stack = new Stack<string>();
-
-        private LinkedListNode<Node> _current;
 
         public Parser Parser = parser;
 
@@ -22,11 +21,9 @@ namespace С_.Back
             { Operators.Div, Operations.Divide },
         };
 
-        public void Execude()
+        public void Execute()
         {
-            Parser.Execude();
-
-            _current = Parser.Nodes.First ?? throw new ArgumentNullException("Tokens is null.");
+            Parser.Execute();
 
             foreach (var node in Parser.Nodes)
             {
@@ -58,9 +55,16 @@ namespace С_.Back
                         return null;
                     }
 
-                case Expr.LitInt newLitInt: return newLitInt.Value;
-                case Expr.LitStr newLitStr: return newLitStr.Value;
-                case Expr.LitIdent newLitIdent: return _variables[newLitIdent.Value];
+                case Expr.LitInt lit: return lit.Value;
+                case Expr.LitStr lit: return lit.Value;
+                case Expr.LitArrayIdent lit: { 
+                        if(_variables[lit.Name] is object[] arr)
+                        {
+                            return arr[lit.Index];
+                        }
+                        else { throw new ArgumentException("Excepted array"); }
+                    }
+                case Expr.LitIdent lit: return _variables[lit.Name];
 
                 case Expr.Binary binary:
                     {
@@ -69,11 +73,27 @@ namespace С_.Back
                             return _operationsDict[binary.Op].Invoke(Eval(binary.L), Eval(binary.R));
                         }
 
-                        if (binary.L.GetType() != typeof(Expr.LitIdent)) throw new ArgumentException("Exepted ident before =");
+                        if (binary.L.GetType() != typeof(Expr.LitIdent)) throw new ArgumentException("Excepted ident before =");
 
                         Expr.LitIdent ident = (Expr.LitIdent) binary.L;               
 
-                        _variables[ident.Value] = Eval(binary.R);
+                        _variables[ident.Name] = Eval(binary.R);
+
+                        return null;
+                    }
+
+                case Decl.Array decl:
+                    {
+                         object[] arr = new object[decl.Length];
+
+                        if (decl.exprs != null) {
+                            for (int i = 0; i < decl.Length; i++)
+                            {
+                                arr[i] = Eval(decl.exprs[i]);
+                            }
+                        }
+
+                        _variables[decl.name] = arr;
 
                         return null;
                     }

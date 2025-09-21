@@ -19,16 +19,22 @@ namespace С_.Front
             { "=", Operators.Equals },
         };
 
-        public readonly Dictionary<string, Delimeters> DelimeterDict = new()
+        public readonly Dictionary<string, Delimiters> DelimiterDict = new()
         {
-            { ";", Delimeters.Semicolon },
-            { "(", Delimeters.LParen },
-            { ")", Delimeters.RParen },
+            { ";", Delimiters.Semicolon },
+            { "(", Delimiters.LParen },
+            { ")", Delimiters.RParen },
+            { "[", Delimiters.LBracket },
+            { "]", Delimiters.RBracket },
+            { "{", Delimiters.LBrace },
+            { "}", Delimiters.RBrace },
+            { ",", Delimiters.Comma },
         };
 
         public readonly Dictionary<string, KeyWords> KeyWordDict = new()
         {
             { "int", KeyWords.Int },
+            { "new", KeyWords.New },
             { "print", KeyWords.Print}
         };
 
@@ -43,7 +49,7 @@ namespace С_.Front
             _code = code;
         }
 
-        public void Execude()
+        public void Execute()
         {
             while (_current < _code.Length)
             {
@@ -65,7 +71,7 @@ namespace С_.Front
 
                 _ when KeyWordDict.TryGetValue(str, out var op) => new Token { Type = op },
 
-                _ when DelimeterDict.TryGetValue(str, out var op) => new Token { Type = op },
+                _ when DelimiterDict.TryGetValue(str, out var op) => new Token { Type = op },
 
                 _ when int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) => new Token { Type = Literals.Int, Val = str },
 

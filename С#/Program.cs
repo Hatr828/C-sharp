@@ -15,9 +15,9 @@ public static class Program
 
         Interpreter interpt = new Interpreter(parser);
 
-        interpt.Execude();
+        interpt.Execute();
 
         Console.WriteLine(interpt.output);
-        //Console.WriteLine(string.Join(" ", parser.Nodes));
+        Console.WriteLine(string.Join("\n", parser.Nodes));
     }
 }
