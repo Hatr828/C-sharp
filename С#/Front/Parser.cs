@@ -51,13 +51,11 @@ namespace С_.Front
                             return new Decl.Var(literal, name, GetDefaultValue(literal));
                         }
 
-                        Expect(Operators.Equals, "Operator Equals not fund");
-                        Pop();
+                        Expect(Operators.Equals, "Operator Equals not fund", true);
 
                         Expr expr = ParseExpr(0);
 
-                        Expect(Delimiters.Semicolon, "Semicolon expected");
-                        Pop();
+                        Expect(Delimiters.Semicolon, "Semicolon expected", true);
 
                         return new Decl.Var(literal, name, expr);
                     }
@@ -67,7 +65,7 @@ namespace С_.Front
                         Literals type = Literals.Int;
 
                         Pop(); // [
-                        Pop(); // ]
+                        Expect(Delimiters.RBracket, "] not found", true);
 
                         string name = Pop().Val ?? throw new ArgumentNullException("Val is null");
 
@@ -78,30 +76,24 @@ namespace С_.Front
                             return new Decl.Array(type, name, null, 0); 
                         }
 
-                        Expect(Operators.Equals, "Operator Equals not fund");
-                        Pop();
+                        Expect(Operators.Equals, "Operator Equals not fund", true);
 
                         if (PeekType() is KeyWords.New)
                         {
                             Pop(); // new
-                            Expect(KeyWords.Int, $"{type} not found");
-                            Pop(); // type
-                            Expect(Delimiters.LBracket, "[ not found");
-                            Pop(); // [
+                            Expect(KeyWords.Int, $"{type} not found", true);
+                            Expect(Delimiters.LBracket, "[ not found", true);
 
                             int length = int.Parse(Pop().Val);
-                            Expect(Delimiters.RBracket, "] not found");
-                            Pop(); // ]
-                            Expect(Delimiters.Semicolon, "Semicolon not found");
-                            Pop(); // ;
+
+                            Expect(Delimiters.RBracket, "] not found", true);
+                            Expect(Delimiters.Semicolon, "Semicolon not found", true);
 
                             return new Decl.Array(type, name, null, length);
 
                         }
 
-                        Expect(Delimiters.LBrace, "Unknown array initialization");
-
-                        Pop(); // {
+                        Expect(Delimiters.LBrace, "Unknown array initialization", true);
 
                         List<Expr> list = new List<Expr>();
                         while (true)
@@ -109,10 +101,10 @@ namespace С_.Front
                             list.Add(ParseExpr(0));
                             if (PeekType() is Delimiters.RBrace) break;
 
-                            Expect(Delimiters.Comma, "Comma not found");
-                            Pop(); // ,
+                            Expect(Delimiters.Comma, "Comma not found", true);
                         }
-                        Pop();
+
+                        Expect(Delimiters.RBrace, "} not found", true);
                         Expect(Delimiters.Semicolon, "Semicolon expected");
 
                         return new Decl.Array(type, name, list, list.Count);
@@ -120,15 +112,13 @@ namespace С_.Front
 
                 case KeyWords kw when kw == KeyWords.Print:
                     {
-                        Expect(Delimiters.LParen, "After print should be (");
-                        Pop();
+                        Expect(Delimiters.LParen, "After print should be (", true);
 
                         Expr expr = ParseExpr(0);
 
-                        Expect(Delimiters.RParen, "After print should be )");
-                        Pop();
-                        Expect(Delimiters.Semicolon, "Semicolon expected");
-                        Pop();
+
+                        Expect(Delimiters.RParen, "After print should be )", true);
+                        Expect(Delimiters.Semicolon, "Semicolon expected", true);
 
                         return new Stmt.Print(expr);
                     }
@@ -145,7 +135,7 @@ namespace С_.Front
                             {
                                 Pop(); // [
                                 left = new Expr.LitArrayIdent(token.Val, int.Parse(Pop().Val));
-                                Pop(); // ]
+                                Expect(Delimiters.RBracket, "] not found", true);
                             }
                             else
                             {
@@ -204,8 +194,7 @@ namespace С_.Front
             if (token.Type is Delimiters.LParen)
             {
                 var inner = ParseExpr(0);
-                if (PeekType() is not Delimiters.RParen) throw new ArgumentException("Excepted ) but got: " + PeekType());
-                Pop();
+                Expect(Delimiters.RParen, ") not found", true);
                 return inner;
             }
 
@@ -240,10 +229,18 @@ namespace С_.Front
             else if (lit == Literals.String) return new Expr.LitStr(null);
             else throw new ArgumentException("Unknow type");
         }
-        private void Expect(Enum expect, string msg)
+        private void Expect(Enum expect, string msg, bool toPop = false)
         {
-            if (!Equals(PeekType(), expect))
-                throw new ArgumentException(msg);
+            if (toPop)
+            {
+                if (!Equals(Pop().Type, expect))
+                    throw new ArgumentException(msg);
+            }
+            else
+            {
+                if (!Equals(PeekType(), expect))
+                    throw new ArgumentException(msg);
+            }
         }
     }
 }
