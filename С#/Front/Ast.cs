@@ -6,9 +6,11 @@ using static С_.Front.Expr;
 namespace С_.Front
 {
     public abstract record Node;
+    public sealed record Block(LinkedList<Node> nodes) : Node;
     public abstract record Expr : Node
     {
-        public sealed record LitInt(long Value) : Expr;
+        public sealed record LitInt(int Value) : Expr;
+        public sealed record LitBool(bool Value) : Expr;
         public sealed record LitStr(string Value) : Expr;
         public sealed record LitIdent(string Name) : Expr;
         public sealed record LitArrayIdent(string Name, int Index) : Expr;
@@ -19,6 +21,8 @@ namespace С_.Front
     public abstract record Stmt : Node
     {
         public sealed record Print(Expr expr) : Stmt;
+        public sealed record If(Expr Cond, Block Block, LinkedList<(Expr expr, Block block)>? IfElses = null, Block? Else = null) : Stmt;
+
     }
 
     public abstract record Decl : Node
@@ -49,12 +53,16 @@ namespace С_.Front
         Plus,
         Mult,
         Div,
-        Equals
+        Assign,
+        Equals, NotEquals,
+        Less, LessOrEqual, Greater, GreaterOrEqual,
     }
     public enum KeyWords
     {
-        Int,
         Print,
+        String, Bool, Int,
+        True, False,
+        If, Else,
         New
     }
     public enum Delimiters
@@ -69,6 +77,7 @@ namespace С_.Front
     public enum Literals
     {
         String,
+        Bool,
         Int,
         Ident,
         Array,

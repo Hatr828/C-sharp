@@ -16,7 +16,13 @@ namespace С_.Front
             { "+", Operators.Plus },
             { "*", Operators.Mult},
             { "/", Operators.Div},
-            { "=", Operators.Equals },
+            { "=", Operators.Assign },
+            { "==", Operators.Equals },
+            { "!=", Operators.NotEquals },
+            { ">", Operators.Greater },
+            { ">=", Operators.GreaterOrEqual },
+            { "<", Operators.Less },
+            { "<=", Operators.LessOrEqual },
         };
 
         public readonly Dictionary<string, Delimiters> DelimiterDict = new()
@@ -34,7 +40,13 @@ namespace С_.Front
         public readonly Dictionary<string, KeyWords> KeyWordDict = new()
         {
             { "int", KeyWords.Int },
+            { "true", KeyWords.True },
+            { "bool", KeyWords.Bool },
+            { "false", KeyWords.False },
+            { "string", KeyWords.String },
             { "new", KeyWords.New },
+            { "if", KeyWords.If },
+            { "else", KeyWords.Else },
             { "print", KeyWords.Print}
         };
 
@@ -49,8 +61,16 @@ namespace С_.Front
             _code = code;
         }
 
+        public void Clear()
+        {
+            Tokens.Clear();
+            _current = 0;
+        }
+
         public void Execute()
         {
+            Clear();
+
             while (_current < _code.Length)
             {
                 if (_code[_current] is ' ' or '\n' or '\r') { _current++; }

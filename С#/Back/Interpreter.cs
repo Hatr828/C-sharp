@@ -19,10 +19,32 @@ namespace С_.Back
             { Operators.Plus, Operations.Add },
             { Operators.Mult, Operations.Multiplay },
             { Operators.Div, Operations.Divide },
+
+            { Operators.Equals, (a, b) => a.Equals(b) },
+            { Operators.NotEquals, (a, b) => !a.Equals(b) },
+
+            { Operators.GreaterOrEqual, Operations.GreaterOrEqual },
+            { Operators.Greater, Operations.Greater },
+            { Operators.Less, Operations.Less },
+            { Operators.LessOrEqual, Operations.LessOrEqual },
         };
+
+        public readonly Dictionary<Literals, Type> typesDict = new()
+        {
+            { Literals.Int, typeof(int) },
+            { Literals.String, typeof(string) },
+        };
+
+        public void Clear()
+        {
+            _variables.Clear();
+            output = "";
+        }
 
         public void Execute()
         {
+            Clear();
+
             Parser.Execute();
 
             foreach (var node in Parser.Nodes)
@@ -57,9 +79,10 @@ namespace С_.Back
 
                 case Expr.LitInt lit: return lit.Value;
                 case Expr.LitStr lit: return lit.Value;
+                case Expr.LitBool lit: return lit.Value;
                 case Expr.LitArrayIdent lit: { 
                         if(_variables[lit.Name] is object[] arr)
-                        {
+                        {                               
                             return arr[lit.Index];
                         }
                         else { throw new ArgumentException("Excepted array"); }
@@ -68,7 +91,7 @@ namespace С_.Back
 
                 case Expr.Binary binary:
                     {
-                        if(binary.Op != Operators.Equals)
+                        if(binary.Op != Operators.Assign)
                         {
                             return _operationsDict[binary.Op].Invoke(Eval(binary.L), Eval(binary.R));
                         }
@@ -89,12 +112,55 @@ namespace С_.Back
                         if (decl.exprs != null) {
                             for (int i = 0; i < decl.Length; i++)
                             {
-                                arr[i] = Eval(decl.exprs[i]);
+                                var temp = Eval(decl.exprs[i]);
+                                if(temp.GetType() != typesDict[decl.Type])
+                                {
+                                    throw new ArgumentException($"Cannot convert {temp.GetType()} to {typesDict[decl.Type]}");
+                                }
+                                arr[i] = temp;  
                             }
                         }
 
-                        _variables[decl.name] = arr;
+                        _variables[decl.name] = arr;  
 
+                        return null;
+                    }
+
+                case Stmt.If If:
+                    {
+                        if((bool)Eval(If.Cond))
+                        {
+                            foreach (var nod in If.Block.nodes)
+                            {
+                                Eval(nod);
+                            }
+                        }
+                        else
+                        {
+                            bool useElse = true;
+                            foreach ((Expr cond, Block block) in If.IfElses)  
+                            {
+                                if ((bool)Eval(cond))
+                                {
+                                    useElse = false;
+                                    foreach (var nod in block.nodes)
+                                    {
+                                        Eval(nod);
+                                    }
+                                    break;
+                                }
+                            }
+
+                            if(useElse)
+                            {
+                                foreach (var nod in If.Else.nodes)
+                                {
+                                    Eval(nod);
+                                }
+                            }
+                            
+                        }
+                        
                         return null;
                     }
 
