@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.Metrics;
+﻿using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text;
 using С_.Back;
 using С_.Front;
@@ -15,16 +16,12 @@ public static class Program
 
         Interpreter interpt = new Interpreter(parser);
 
-        parser.Execute();
-
-        Console.WriteLine("Lexer: \n");
-        Console.WriteLine(string.Join("\n", parser.Lexer.Tokens));
-        Console.WriteLine("\nParser: \n");
-        Console.WriteLine(string.Join("\n", parser.Nodes));
-        Console.WriteLine("\nResult: \n");
-
+        var sw = Stopwatch.StartNew();
         interpt.Execute();
 
+        sw.Stop();
         Console.WriteLine(interpt.output);
+        Console.WriteLine($"Время: {sw.Elapsed}");
+        Console.ReadLine();
     }
 }

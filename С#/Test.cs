@@ -1,20 +1,6 @@
-if(false) {
-	print("123");
-}
-else if (1 > 0)
-{
-	print("101");
+int i = 0;
+while(i < 100000) {
+ i = i + 1;
 }
 
-if (false)
-{
-	print("123");
-}
-else if (1 > 1)
-{
-	print("101");
-}
-else
-{
-	print("else");
-}
+print(i);

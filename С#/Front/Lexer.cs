@@ -1,11 +1,12 @@
 ﻿using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace С_.Front
 {
     public class Lexer
     {
-        public LinkedList<Token> Tokens = new LinkedList<Token>();
+        public List<Token> Tokens = new List<Token>();
 
         private string _code;
 
@@ -42,12 +43,14 @@ namespace С_.Front
             { "int", KeyWords.Int },
             { "true", KeyWords.True },
             { "bool", KeyWords.Bool },
+            { "void", KeyWords.Void },
             { "false", KeyWords.False },
             { "string", KeyWords.String },
             { "new", KeyWords.New },
             { "if", KeyWords.If },
             { "else", KeyWords.Else },
-            { "print", KeyWords.Print}
+            { "print", KeyWords.Print },
+            { "while", KeyWords.While }
         };
 
         private static readonly HashSet<char> SingleDelims = new("(){}[];,");
@@ -76,7 +79,7 @@ namespace С_.Front
                 if (_code[_current] is ' ' or '\n' or '\r') { _current++; }
                 else
                 {
-                    Tokens.AddLast(
+                    Tokens.Add(
                         Match(getNext())
                     );
                 }

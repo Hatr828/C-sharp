@@ -1,14 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using С_.Front;
 using static С_.Front.Expr;
+using static С_.Front.Stmt;
 
 namespace С_.Back
 {
     public class Interpreter(Parser parser)
     {
-        private Dictionary<string, object?> _variables = new Dictionary<string, object?>();
+        private Dictionary<ulong, object?> _variables = new();
+        private Dictionary<string, (List<(Literals, string)>? Args, Block Block)> _functions = new();
 
         public Parser Parser = parser;
 
@@ -46,6 +49,11 @@ namespace С_.Back
             Clear();
 
             Parser.Execute();
+
+            foreach (var node in Parser.Prolog)
+            {
+                Eval(node);
+            }
 
             foreach (var node in Parser.Nodes)
             {
@@ -88,6 +96,26 @@ namespace С_.Back
                         else { throw new ArgumentException("Excepted array"); }
                     }
                 case Expr.LitIdent lit: return _variables[lit.Name];
+                case Expr.LitFuncCall lit:
+                    {
+                        /*
+                        var (args, block) = _functions[lit.Name];
+                        foreach (var ((type, name), value) in args.Zip(lit.Values))
+                        {
+                            var temp = Eval(value);
+                            if (temp.GetType() != typesDict[type]) throw new ArgumentException($"Unsuitable types: { value.GetType() } and { typesDict[type] }");
+                            _variables[name] = temp;
+                        }
+
+                        foreach (var nod in block.nodes)
+                        {
+                            Eval(nod);
+                        }
+
+                        
+                        */
+                        return null;
+                    }
 
                 case Expr.Binary binary:
                     {
@@ -105,19 +133,27 @@ namespace С_.Back
                         return null;
                     }
 
+                case Decl.Func func:
+                    {
+                        _functions[func.name] = (func.Args, func.Block);
+
+                        return null;
+                    }
+
                 case Decl.Array decl:
                     {
                          object[] arr = new object[decl.Length];
 
                         if (decl.exprs != null) {
-                            for (int i = 0; i < decl.Length; i++)
+                            int i = 0;
+                            foreach (Expr expr in decl.exprs)
                             {
-                                var temp = Eval(decl.exprs[i]);
+                                var temp = Eval(expr);
                                 if(temp.GetType() != typesDict[decl.Type])
                                 {
                                     throw new ArgumentException($"Cannot convert {temp.GetType()} to {typesDict[decl.Type]}");
                                 }
-                                arr[i] = temp;  
+                                arr[i++] = temp;  
                             }
                         }
 
@@ -161,6 +197,19 @@ namespace С_.Back
                             
                         }
                         
+                        return null;
+                    }
+
+                case Stmt.While While:
+                    {
+                        while ((bool)Eval(While.Cond))
+                        {
+                            foreach (var nod in While.Block.nodes)
+                            {
+                                Eval(nod);
+                            }
+                        }
+
                         return null;
                     }
 

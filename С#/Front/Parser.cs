@@ -1,6 +1,8 @@
-﻿using System.Diagnostics.Metrics;
+﻿using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using static С_.Front.Stmt;
 
 namespace С_.Front
@@ -9,9 +11,14 @@ namespace С_.Front
     {
         public Lexer Lexer = lexer;
 
-        private LinkedListNode<Token> _current;
+        private int _current;
 
-        public LinkedList<Node> Nodes = new LinkedList<Node>();
+        private ulong _currentName = 0;
+
+        private Dictionary<string, ulong> _variables = new();
+
+        public List<Node> Prolog = new();
+        public List<Node> Nodes = new();
 
         public readonly Dictionary<Operators, byte> OperatorPriority = new()
         {
@@ -33,20 +40,27 @@ namespace С_.Front
             { KeyWords.Int, Literals.Int },
             { KeyWords.String, Literals.String },
             { KeyWords.Bool, Literals.Bool },
+            { KeyWords.Void, Literals.Void },
         };
-                                                                
-        public void Execute()
+          
+        public void Clear()
         {
             Nodes.Clear();
+            _current = 0; 
+            _currentName = 0;
+        }
+
+        public void Execute()
+        {
+            Clear();
 
             Lexer.Execute();
 
-            _current = Lexer.Tokens.First;
-
-            while (_current != null)
+            while (_current < Lexer.Tokens.Count)
             {
-                Nodes.AddLast(Eval(Pop()));
+                Nodes.Add(Eval(Pop()));
             }
+            _variables.Clear();
         }
 
         private Node Eval(Token token)
@@ -55,6 +69,44 @@ namespace С_.Front
             {
                 case Delimiters del when del == Delimiters.Semicolon:
                     {
+                        return null;
+                    }
+
+                case KeyWords kw when literalsDict.ContainsKey(kw) && PeekType() is Literals.Ident && Peek2Type() is Delimiters.LParen:
+                    {
+                        Literals type = literalsDict[kw];
+                        string name = Pop().Val ?? throw new NullReferenceException();
+
+                        Pop(); // (
+
+                        List<(Literals, string)>? Args = new();
+
+                        if (PeekType() is not Delimiters.RParen)
+                        {
+                            while (PeekType() is not Delimiters.RParen)
+                            {
+                                Literals argtType = literalsDict[(KeyWords)Pop().Type];
+                                string argName = Pop().Val ?? throw new NullReferenceException();
+
+                                Args.Add((argtType, argName));
+                            }
+                        }
+
+                        Expect(Delimiters.RParen, ") not found", true);
+
+                        List<Node> nodes = new();
+
+                        Expect(Delimiters.LBrace, "{ not found", true);
+
+                        while (PeekType() is not Delimiters.RBrace)
+                        {
+                            nodes.Add(Eval(Pop()));
+                        }
+
+                        Pop();
+
+                        Prolog.Add(new Decl.Func(type, name, Args, new Block(nodes)));
+
                         return null;
                     }
 
@@ -67,7 +119,8 @@ namespace С_.Front
                         {
                             Pop();
 
-                            return new Decl.Var(literal, name, GetDefaultValue(literal));
+                            _variables[name] = _currentName;
+                            return new Decl.Var(literal, _currentName++, GetDefaultValue(literal));
                         }
 
                         Expect(Operators.Assign, "Operator Assign not fund", true);
@@ -75,8 +128,8 @@ namespace С_.Front
                         Expr expr = ParseExpr(0);
 
                         Expect(Delimiters.Semicolon, "Semicolon expected", true);
-
-                        return new Decl.Var(literal, name, expr);
+                        _variables[name] = _currentName;
+                        return new Decl.Var(literal, _currentName++, expr);
                     }
 
                 case KeyWords kw when literalsDict.ContainsKey(kw) && PeekType() is Delimiters.LBracket:
@@ -91,8 +144,8 @@ namespace С_.Front
                         if (PeekType() is Delimiters.Semicolon)
                         {
                             Pop();
-
-                            return new Decl.Array(type, name, null, 0); 
+                            _variables[name] = _currentName;
+                            return new Decl.Array(type, _currentName++, null, 0); 
                         }
 
                         Expect(Operators.Assign, "Operator Assign not fund", true);
@@ -107,14 +160,14 @@ namespace С_.Front
 
                             Expect(Delimiters.RBracket, "] not found", true);
                             Expect(Delimiters.Semicolon, "Semicolon not found", true);
-
-                            return new Decl.Array(type, name, null, length);
+                            _variables[name] = _currentName;
+                            return new Decl.Array(type, _currentName++, null, length);
 
                         }
 
                         Expect(Delimiters.LBrace, "Unknown array initialization", true);
 
-                        List<Expr> list = new List<Expr>();
+                        List<Expr> list = new();
                         while (true)
                         {
                             list.Add(ParseExpr(0));
@@ -125,8 +178,8 @@ namespace С_.Front
 
                         Expect(Delimiters.RBrace, "} not found", true);
                         Expect(Delimiters.Semicolon, "Semicolon expected");
-
-                        return new Decl.Array(type, name, list, list.Count);
+                        _variables[name] = _currentName;
+                        return new Decl.Array(type, _currentName++, list, list.Count);
                     }
 
                 case KeyWords kw when kw == KeyWords.Print:
@@ -146,16 +199,16 @@ namespace С_.Front
                     {
                         var (cond, block) = ParseParenExprAndOptionalBlock();
 
-                        LinkedList<(Expr, Block)> ifElses = new();
+                        List<(Expr, Block)> ifElses = new();
 
                         while (_current != null && PeekType() is KeyWords.Else && Peek2Type() is KeyWords.If)
                         {
                             Pop(); Pop();
-                            ifElses.AddLast(ParseParenExprAndOptionalBlock());
+                            ifElses.Add(ParseParenExprAndOptionalBlock());
 
                         }
 
-                        LinkedList<Node> blockElse = new();
+                        List<Node> blockElse = new();
 
                         if(_current != null && PeekType() is KeyWords.Else)
                         {
@@ -164,13 +217,20 @@ namespace С_.Front
 
                             while (PeekType() is not Delimiters.RBrace)
                             {
-                                blockElse.AddLast(Eval(Pop()));
+                                blockElse.Add(Eval(Pop()));
                             }
 
                             Pop();
                         }
 
                         return new Stmt.If(cond, block, ifElses, new Block(blockElse));
+                    }
+
+                case KeyWords kw when kw == KeyWords.While:
+                    {
+                        var (cond, block) = ParseParenExprAndOptionalBlock();
+
+                        return new Stmt.While(cond, block);
                     }
 
                 case KeyWords kw:
@@ -195,12 +255,28 @@ namespace С_.Front
                             if (PeekType() is Delimiters.LBracket)
                             {
                                 Pop(); // [
-                                left = new Expr.LitArrayIdent(token.Val, int.Parse(Pop().Val));
+                                left = new Expr.LitArrayIdent(_variables[token.Val], int.Parse(Pop().Val));
                                 Expect(Delimiters.RBracket, "] not found", true);
+                            }
+                            else if (PeekType() is Delimiters.LParen)
+                            {
+                                Pop();
+
+                                List<Expr> list = new();
+
+                                if(PeekType() is not Delimiters.RParen) list.Add((Expr)Eval(Pop()));
+                                while (PeekType() is not Delimiters.RParen)
+                                {
+                                    list.Add((Expr)Eval(Pop()));
+                                    Expect(Delimiters.Comma, ", not found", true);
+                                }
+                                Pop();
+
+                                return new Expr.LitFuncCall(token.Val, list);
                             }
                             else
                             {
-                                left = new Expr.LitIdent(token.Val);
+                                left = new Expr.LitIdent(_variables[token.Val]);
                             }
                         }
                         else { throw new ArgumentException("Unknown type: " + token.Type); }
@@ -228,7 +304,7 @@ namespace С_.Front
         {
             Expr left = ParsePrimary();
 
-            while (_current != null && _current.Value.Type is Operators)
+            while (_current != null && PeekType() is Operators)
             {
                 Operators op = (Operators)Peek().Type;
                 byte pr = OperatorPriority[op];
@@ -266,25 +342,21 @@ namespace С_.Front
 
         private Token Peek()
         {
-            return _current?.Value ?? throw new NullReferenceException();
+            return Lexer.Tokens[_current];
         }
         private Enum Peek2Type()
         {
-            return _current?.Next?.Value.Type ?? throw new NullReferenceException();
+            return Lexer.Tokens[_current + 1].Type;
         }
         private Enum PeekType()
         {
-            return _current?.Value.Type ?? throw new NullReferenceException();
+            return Lexer.Tokens[_current].Type;
         }
 
         private Token Pop()
         {
-            if (_current is null)
-                throw new InvalidOperationException("No current node");
-
-            var value = _current.Value;
-            _current = _current.Next;
-            return value;
+            _current++;
+            return Lexer.Tokens[_current - 1];
         }
 
         private Expr GetDefaultValue(Literals lit)
@@ -318,7 +390,7 @@ namespace С_.Front
 
             Expect(Delimiters.RParen, "After if should be )", true);
 
-            LinkedList<Node> nodes = new LinkedList<Node>();
+            List<Node> nodes = new();
 
             if (PeekType() is Delimiters.LBrace)
             {
@@ -326,7 +398,7 @@ namespace С_.Front
 
                 while (PeekType() is not Delimiters.RBrace)
                 {
-                    nodes.AddLast(Eval(Pop()));
+                    nodes.Add(Eval(Pop()));
                 }
 
                 Pop();

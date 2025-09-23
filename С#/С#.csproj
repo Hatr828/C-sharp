@@ -8,7 +8,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
+
+
+	<ItemGroup>
     <Compile Remove="Test.cs" />
   </ItemGroup>
 
