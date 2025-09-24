@@ -12,8 +12,8 @@ namespace С_.Front
         public sealed record LitInt(int Value) : Expr;
         public sealed record LitBool(bool Value) : Expr;
         public sealed record LitStr(string Value) : Expr;
-        public sealed record LitIdent(ulong Name) : Expr;
-        public sealed record LitArrayIdent(ulong Name, int Index) : Expr;
+        public sealed record LitIdent(string Name) : Expr;
+        public sealed record LitArrayIdent(string Name, int Index) : Expr;
         public sealed record LitFuncCall(string Name, List<Expr> Values) : Expr;
         public sealed record Binary(Operators Op, Expr L, Expr R) : Expr;
 
@@ -29,8 +29,8 @@ namespace С_.Front
 
     public abstract record Decl : Node
     {
-        public sealed record Var(Literals Type, ulong name, Expr expr) : Decl;
-        public sealed record Array(Literals Type, ulong name, List<Expr> exprs, int Length) : Decl;   
+        public sealed record Var(Literals Type, string name, Expr expr) : Decl;
+        public sealed record Array(Literals Type, string name, List<Expr> exprs, int Length) : Decl;   
         public sealed record Func(Literals ReturnType, string name, List<(Literals, string)>? Args, Block Block) : Decl;
     }
 

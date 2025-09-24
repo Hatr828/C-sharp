@@ -3,6 +3,7 @@ using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 using static С_.Front.Stmt;
 
 namespace С_.Front
@@ -14,8 +15,6 @@ namespace С_.Front
         private int _current;
 
         private ulong _currentName = 0;
-
-        private Dictionary<string, ulong> _variables = new();
 
         public List<Node> Prolog = new();
         public List<Node> Nodes = new();
@@ -60,7 +59,6 @@ namespace С_.Front
             {
                 Nodes.Add(Eval(Pop()));
             }
-            _variables.Clear();
         }
 
         private Node Eval(Token token)
@@ -89,6 +87,8 @@ namespace С_.Front
                                 string argName = Pop().Val ?? throw new NullReferenceException();
 
                                 Args.Add((argtType, argName));
+                                if (PeekType() is not Delimiters.RParen)
+                                    Expect(Delimiters.Comma, ", not found " + Peek(), true);
                             }
                         }
 
@@ -119,8 +119,7 @@ namespace С_.Front
                         {
                             Pop();
 
-                            _variables[name] = _currentName;
-                            return new Decl.Var(literal, _currentName++, GetDefaultValue(literal));
+                            return new Decl.Var(literal, name, GetDefaultValue(literal));
                         }
 
                         Expect(Operators.Assign, "Operator Assign not fund", true);
@@ -128,8 +127,7 @@ namespace С_.Front
                         Expr expr = ParseExpr(0);
 
                         Expect(Delimiters.Semicolon, "Semicolon expected", true);
-                        _variables[name] = _currentName;
-                        return new Decl.Var(literal, _currentName++, expr);
+                        return new Decl.Var(literal, name, expr);
                     }
 
                 case KeyWords kw when literalsDict.ContainsKey(kw) && PeekType() is Delimiters.LBracket:
@@ -144,8 +142,7 @@ namespace С_.Front
                         if (PeekType() is Delimiters.Semicolon)
                         {
                             Pop();
-                            _variables[name] = _currentName;
-                            return new Decl.Array(type, _currentName++, null, 0); 
+                            return new Decl.Array(type, name, null, 0); 
                         }
 
                         Expect(Operators.Assign, "Operator Assign not fund", true);
@@ -160,8 +157,7 @@ namespace С_.Front
 
                             Expect(Delimiters.RBracket, "] not found", true);
                             Expect(Delimiters.Semicolon, "Semicolon not found", true);
-                            _variables[name] = _currentName;
-                            return new Decl.Array(type, _currentName++, null, length);
+                            return new Decl.Array(type, name, null, length);
 
                         }
 
@@ -178,8 +174,7 @@ namespace С_.Front
 
                         Expect(Delimiters.RBrace, "} not found", true);
                         Expect(Delimiters.Semicolon, "Semicolon expected");
-                        _variables[name] = _currentName;
-                        return new Decl.Array(type, _currentName++, list, list.Count);
+                        return new Decl.Array(type, name, list, list.Count);
                     }
 
                 case KeyWords kw when kw == KeyWords.Print:
@@ -255,7 +250,7 @@ namespace С_.Front
                             if (PeekType() is Delimiters.LBracket)
                             {
                                 Pop(); // [
-                                left = new Expr.LitArrayIdent(_variables[token.Val], int.Parse(Pop().Val));
+                                left = new Expr.LitArrayIdent(token.Val, int.Parse(Pop().Val));
                                 Expect(Delimiters.RBracket, "] not found", true);
                             }
                             else if (PeekType() is Delimiters.LParen)
@@ -264,11 +259,11 @@ namespace С_.Front
 
                                 List<Expr> list = new();
 
-                                if(PeekType() is not Delimiters.RParen) list.Add((Expr)Eval(Pop()));
                                 while (PeekType() is not Delimiters.RParen)
                                 {
                                     list.Add((Expr)Eval(Pop()));
-                                    Expect(Delimiters.Comma, ", not found", true);
+                                    if (PeekType() is not Delimiters.RParen)
+                                        Expect(Delimiters.Comma, ", not found " + Peek(), true);
                                 }
                                 Pop();
 
@@ -276,7 +271,7 @@ namespace С_.Front
                             }
                             else
                             {
-                                left = new Expr.LitIdent(_variables[token.Val]);
+                                left = new Expr.LitIdent(token.Val);
                             }
                         }
                         else { throw new ArgumentException("Unknown type: " + token.Type); }

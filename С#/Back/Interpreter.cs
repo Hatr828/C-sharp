@@ -10,7 +10,7 @@ namespace С_.Back
 {
     public class Interpreter(Parser parser)
     {
-        private Dictionary<ulong, object?> _variables = new();
+        private Env env = new();
         private Dictionary<string, (List<(Literals, string)>? Args, Block Block)> _functions = new();
 
         public Parser Parser = parser;
@@ -40,7 +40,7 @@ namespace С_.Back
 
         public void Clear()
         {
-            _variables.Clear();
+            env = new();
             output = "";
         }
 
@@ -71,7 +71,7 @@ namespace С_.Back
                     {
                         var value = Eval(newVariable.expr);
 
-                        _variables[newVariable.name] = value;
+                        env.Set(newVariable.name, value);
 
                         return value;
                     }
@@ -89,22 +89,23 @@ namespace С_.Back
                 case Expr.LitStr lit: return lit.Value;
                 case Expr.LitBool lit: return lit.Value;
                 case Expr.LitArrayIdent lit: { 
-                        if(_variables[lit.Name] is object[] arr)
+                        if(env.Get(lit.Name) is object[] arr)
                         {                               
                             return arr[lit.Index];
                         }
                         else { throw new ArgumentException("Excepted array"); }
                     }
-                case Expr.LitIdent lit: return _variables[lit.Name];
+                case Expr.LitIdent lit: return env.Get(lit.Name);
                 case Expr.LitFuncCall lit:
                     {
-                        /*
+                        env.BeginScope();
+
                         var (args, block) = _functions[lit.Name];
                         foreach (var ((type, name), value) in args.Zip(lit.Values))
                         {
                             var temp = Eval(value);
                             if (temp.GetType() != typesDict[type]) throw new ArgumentException($"Unsuitable types: { value.GetType() } and { typesDict[type] }");
-                            _variables[name] = temp;
+                            env.Set(name, temp);
                         }
 
                         foreach (var nod in block.nodes)
@@ -112,8 +113,7 @@ namespace С_.Back
                             Eval(nod);
                         }
 
-                        
-                        */
+                        env.EndScope();
                         return null;
                     }
 
@@ -128,7 +128,7 @@ namespace С_.Back
 
                         Expr.LitIdent ident = (Expr.LitIdent) binary.L;               
 
-                        _variables[ident.Name] = Eval(binary.R);
+                        env.Set(ident.Name, Eval(binary.R));
 
                         return null;
                     }
@@ -157,13 +157,15 @@ namespace С_.Back
                             }
                         }
 
-                        _variables[decl.name] = arr;  
+                        env.Set(decl.name, arr);  
 
                         return null;
                     }
 
                 case Stmt.If If:
                     {
+                        env.BeginScope();
+
                         if((bool)Eval(If.Cond))
                         {
                             foreach (var nod in If.Block.nodes)
@@ -196,12 +198,14 @@ namespace С_.Back
                             }
                             
                         }
-                        
+                        env.EndScope();
                         return null;
                     }
 
                 case Stmt.While While:
                     {
+                        env.BeginScope();
+
                         while ((bool)Eval(While.Cond))
                         {
                             foreach (var nod in While.Block.nodes)
@@ -209,6 +213,8 @@ namespace С_.Back
                                 Eval(nod);
                             }
                         }
+
+                        env.EndScope();
 
                         return null;
                     }
