@@ -1,14 +1,9 @@
-int i = 0;
-while(i < 100000) {
- i = i + 1;
-    int a = 0;
-}
-
-void A(int a, int b, int c)
+long n = 1000000;
+long s = 0;
+long i = 0;
+while (i < n)
 {
-    print(a + b + c);
+    s = s + (i * i - i) / (i + 1);
+    i = i + 1;
 }
-
-print(a);
-
-A(1, 2, 3);
+print(s);

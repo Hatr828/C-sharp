@@ -14,24 +14,32 @@ namespace С_.Back
             (string s1, string s2) => s1 + s2,
             (string s, var v) => s + v,          
             (var v, string s) => $"{v}{s}",
-            (long x, long y) => (object)checked(x + y),
-            (int x, int y) => (object)checked(x + y),
+            (long x, long y) => (object)(x + y),
+            (int x, int y) => (object)(x + y),
+
+            _ => throw new InvalidOperationException($"Unsupported types: {a.GetType()} and {b.GetType()}")
+        };
+
+        public static object? Minus(object? a, object? b) => (a, b) switch
+        {
+            (long x, long y) => (object)(x - y),
+            (int x, int y) => (object)(x - y),
 
             _ => throw new InvalidOperationException($"Unsupported types: {a.GetType()} and {b.GetType()}")
         };
 
         public static object? Multiplay(object? a, object? b) => (a, b) switch
         {
-            (long x, long y) => (object)checked(x * y),
-            (int x, int y) => (object)checked(x * y),         
+            (long x, long y) => (object)(x * y),
+            (int x, int y) => (object)(x * y),         
 
             _ => throw new InvalidOperationException($"Unsupported types: {a.GetType()} and {b.GetType()}")
         };
 
         public static object? Divide(object? a, object? b) => (a, b) switch
         {
-            (long x, long y) => (object)checked(x / y),
-            (int x, int y) => (object)checked(x / y),
+            (long x, long y) => (object)(x / y),
+            (int x, int y) => (object)(x / y),
 
             _ => throw new InvalidOperationException($"Unsupported types: {a.GetType()} and {b.GetType()}")
         };

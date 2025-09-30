@@ -15,6 +15,7 @@ namespace С_.Front
         public readonly Dictionary<string, Operators> OperatorDict = new()
         {
             { "+", Operators.Plus },
+            { "-", Operators.Minus },
             { "*", Operators.Mult},
             { "/", Operators.Div},
             { "=", Operators.Assign },
@@ -41,6 +42,7 @@ namespace С_.Front
         public readonly Dictionary<string, KeyWords> KeyWordDict = new()
         {
             { "int", KeyWords.Int },
+            { "long", KeyWords.Long },
             { "true", KeyWords.True },
             { "bool", KeyWords.Bool },
             { "void", KeyWords.Void },

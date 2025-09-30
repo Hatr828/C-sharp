@@ -25,6 +25,7 @@ namespace С_.Front
             { Operators.Div, 70},
 
             { Operators.Plus, 60 },
+            { Operators.Minus, 60 },
 
             { Operators.Greater,        40 }, 
             { Operators.GreaterOrEqual, 40 },  
@@ -37,6 +38,7 @@ namespace С_.Front
         public readonly Dictionary<KeyWords, Literals> literalsDict = new()
         {
             { KeyWords.Int, Literals.Int },
+            { KeyWords.Long, Literals.Long },
             { KeyWords.String, Literals.String },
             { KeyWords.Bool, Literals.Bool },
             { KeyWords.Void, Literals.Void },

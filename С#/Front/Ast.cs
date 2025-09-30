@@ -54,6 +54,7 @@ namespace С_.Front
 
     public enum Operators {
         Plus,
+        Minus,
         Mult,
         Div,
         Assign,
@@ -63,7 +64,7 @@ namespace С_.Front
     public enum KeyWords
     {
         Print,
-        String, Bool, Int, Void,
+        String, Bool, Int, Void, Long,
         True, False,
         If, Else,
         While,
@@ -82,6 +83,7 @@ namespace С_.Front
     {
         String,
         Bool,
+        Long,
         Void,
         Int,
         Ident,

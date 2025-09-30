@@ -22,6 +22,7 @@ namespace С_.Back
             { Operators.Plus, Operations.Add },
             { Operators.Mult, Operations.Multiplay },
             { Operators.Div, Operations.Divide },
+            { Operators.Minus, Operations.Minus },
 
             { Operators.Equals, (a, b) => a.Equals(b) },
             { Operators.NotEquals, (a, b) => !a.Equals(b) },
@@ -70,7 +71,7 @@ namespace С_.Back
                 case Decl.Var newVariable:
                     {
                         var value = Eval(newVariable.expr);
-
+    
                         env.Set(newVariable.name, value);
 
                         return value;
